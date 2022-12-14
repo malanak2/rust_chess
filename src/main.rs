@@ -16,23 +16,7 @@ enum Figure {
     Pawn,
 }
 
-struct Color {
-    r: f32,
-    g: f32,
-    b: f32,
-    a: f32
-}
 
-impl Color {
-    fn from(color: [f32; 4]) -> Color {
-        Color {
-            r: color[0],
-            g: color[1],
-            b: color[2],
-            a: color[3]
-        }
-    }
-}
 
 impl Figure{
     fn color(&self) -> Color {
@@ -77,7 +61,7 @@ struct MainState {
 }
 
 impl MainState {
-    fn new() -> GameResult<MainState> {
+    fn new(ctx: &mut Context) -> GameResult<MainState> {
 
         Ok(MainState { board: Board::new() })
     }
@@ -89,12 +73,27 @@ impl event::EventHandler<ggez::GameError> for MainState {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas =
-            graphics::Canvas::from_frame(ctx, graphics::Color::from([186. / 255., 140. / 255., 99. / 255., 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::from([186. / 255., 140. / 255., 99. / 255., 1.0]));
+
+        let (width, height) = ggez::graphics::GraphicsContext::size();
 
         for i in 0..8 {
             for x in 0..8 {
-                canvas.draw(graphics::Rect, Vec2::new())
+                if matches!(PlayerFigure.Black, this.board[i][x]) {
+                    canvas.draw(&graphics::Mesh::new_rectangle(
+                        ctx,
+                        graphics::DrawMode::fill(),
+                        graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
+                        Color::BLACK,
+                    ), Vec2::new((400 * i) / width, (400 * i) / height));
+                } else {
+                    canvas.draw(&graphics::Mesh::new_rectangle(
+                        ctx,
+                        graphics::DrawMode::fill(),
+                        graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
+                        Color::WHITE,
+                    ), Vec2::new((400 * i) / width, (400 * i) / height));
+                }            
             }
         }
 
