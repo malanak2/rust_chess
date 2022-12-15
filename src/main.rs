@@ -75,24 +75,25 @@ impl event::EventHandler<ggez::GameError> for MainState {
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
         let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::from([186. / 255., 140. / 255., 99. / 255., 1.0]));
 
-        let (width, height) = ggez::graphics::GraphicsContext::size();
+        let (width, height) = ggez::graphics::GraphicsContext::size(&GraphicsContext);
 
         for i in 0..8 {
             for x in 0..8 {
-                if matches!(PlayerFigure.Black, this.board[i][x]) {
+                let currCoords = self.board[i][x];
+                if matches!(PlayerFigure.Black, currCoords) {
                     canvas.draw(&graphics::Mesh::new_rectangle(
                         ctx,
                         graphics::DrawMode::fill(),
                         graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
                         Color::BLACK,
-                    ), Vec2::new((400 * i) / width, (400 * i) / height));
+                    ), Vec2::new((400.0 * i as f32) / width, (400.0 * i as f32) / height));
                 } else {
                     canvas.draw(&graphics::Mesh::new_rectangle(
                         ctx,
                         graphics::DrawMode::fill(),
                         graphics::Rect::new(0.0, 0.0, 400.0, 400.0),
                         Color::WHITE,
-                    ), Vec2::new((400 * i) / width, (400 * i) / height));
+                    ), Vec2::new((400.0 * i as f32) / width, (400.0 * i as f32) / height));
                 }            
             }
         }
