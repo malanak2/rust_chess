@@ -1,7 +1,12 @@
 #![allow(clippy::unnecessary_wraps)]
 
-use ggez::{event, glam::*, graphics::{self, Color, DrawParam}, Context, GameResult, graphics::Image, GameError};
+use std::time::Instant;
+
+use ggez::{event, glam::*, graphics::{self, Color, DrawParam, GraphicsContext}, Context, GameResult, graphics::Image, GameError};
 use ggez::event::MouseButton;
+
+const SCREEN_WIDTH: f32 = 800.0;
+const SCREEN_HEIGHT: f32 = 600.0;
 
 #[derive(Clone)]
 enum Figure {
@@ -19,14 +24,24 @@ enum movement_type {
 }
 
 impl Figure{
-    fn get_moves(&self, ) -> Color {
+    fn get_moves(&self, ) -> [[[i32; 2]; 8]; 1] {
         match self {
-            Figure::King => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]], [movement_type::Limited]],
-            Figure::Queen => Color::from([0.0, 0.0, 0.0, 1.0]),
-            Figure::Bishop => Color::from([0.0, 0.0, 0.0, 1.0]),
-            Figure::Knight => Color::from([0.0, 0.0, 0.0, 1.0]),
-            Figure::Rook => Color::from([0.0, 0.0, 0.0, 1.0]),
-            Figure::Pawn => Color::from([0.0, 0.0, 0.0, 1.0]),
+            Figure::King => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]]],
+            Figure::Queen => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]]],
+            Figure::Bishop => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]]],
+            Figure::Knight => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]]],
+            Figure::Rook => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]]],
+            Figure::Pawn => [[[1, 1], [0, 1], [1, 0], [-1, 0], [-1, 1], [-1, -1], [1, -1], [0, -1]]],
+        }
+    }
+    fn get_texture(&self) -> graphics::Text {
+        match &self {
+            Figure::King => graphics::Text::new("K"),
+            Figure::Queen => graphics::Text::new("Q"),
+            Figure::Bishop => graphics::Text::new("B"),
+            Figure::Knight => graphics::Text::new("N"),
+            Figure::Rook => graphics::Text::new("R"),
+            Figure::Pawn => graphics::Text::new("P"),
         }
     }
 }
@@ -60,6 +75,7 @@ struct App {
     board: Board,
     sel_piece_x: Option<i32>,
     sel_piece_y: Option<i32>,
+    time_since_start: Instant
 }
 
 impl App {
@@ -67,6 +83,7 @@ impl App {
         Ok(App { board: Board::new(),
             sel_piece_x: None,
             sel_piece_y: None,
+            time_since_start: Instant::now()
         })
     }
 }
@@ -78,23 +95,73 @@ impl event::EventHandler<ggez::GameError> for App {
     }
 
     fn draw(&mut self, ctx: &mut Context) -> GameResult {
-        let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::from([186. / 255., 140. / 255., 99. / 255., 1.0]));
+        let mut canvas = graphics::Canvas::from_frame(ctx, graphics::Color::BLACK);
+        let (width, height) = (SCREEN_WIDTH, SCREEN_HEIGHT);
+        let h: f32 = f32::sin(self.time_since_start.elapsed().as_secs_f32())*height;
+        for y in 0..8 {
+            for x in 0..8 {
+                    canvas.draw(&graphics::Mesh::new_rectangle(
+                        ctx,
+                        graphics::DrawMode::fill(),
+                        graphics::Rect::new((width / 8.0) * x as f32, (height / 8.0) * y as f32, width / 8.0, height / 8.0),
+                        if (x + y) % 2 == 0 {Color::WHITE} else {Color::BLACK},
+                    )?, Vec2::new(0.0, 0.0));
+                    //println!("{} {} WHITE", (width / 8.0) * x as f32, (height / 8.0) * i as f32);
+            }
+        }
+        for y in 0..8 {
+            for x in 0..8 {
+                let figure = &self.board.data[x as usize][y as usize];
+                if let Some(Figure) = figure {
+                    let Some(player_figure) = &self.board.data[x as usize][y as usize] else {
+                        continue;
+                    };
+                    let color;
+                    let figure = match player_figure {
+                        PlayerFigure::Black(figure) => {
+                            color = Color::BLACK;
+                            figure
+                        }
+                        PlayerFigure::White(figure) => {
+                            color = Color::WHITE;
+                            figure
+                        }
+                    };
 
-        
+                    canvas.draw(figure.get_texture().set_scale(50.0), Vec2::new((width / 8.0) * x as f32, (height / 8.0) * y as f32));
+                }
+                
+                
+            }
+        }
+        canvas.draw(&graphics::Mesh::new_rectangle(
+            ctx,
+                graphics::DrawMode::fill(),
+                graphics::Rect::new(0.0, 0.0, 20.0, h),
+                Color::RED,
+            )?, Vec2::new(0.0, 0.0));
         canvas.finish(ctx)?;
 
         Ok(())
     }
     fn mouse_button_up_event(&mut self, _ctx: &mut Context, _button: MouseButton, _x: f32, _y: f32) -> GameResult {
-        
-        
-        println!("Current selected coords: X: {}, Y: {}, Is it whites turn? {}", self.sel_piece_x.unwrap(), self.sel_piece_y.unwrap(), self.board.is_whites_turn);
+        let (width, height) = (SCREEN_WIDTH, SCREEN_HEIGHT);
+        let (g_x, g_y) = (width / 8.0, height / 8.0);
+        let (grid_x, grid_y) = (_y as i32 / g_y as i32, _x as i32 / g_x as i32);
+        let figure = &self.board.data[grid_x as usize][grid_y as usize];
+        if figure.is_none() {
+            println!("None at {} {}", grid_x, grid_y);
+        }
+        println!("Clicked at {} {}", grid_x, grid_y);
         Ok(())
+        //println!("Current selected coords: X: {}, Y: {}, Is it whites turn? {}", self.sel_piece_x.unwrap(), self.sel_piece_y.unwrap(), self.board.is_whites_turn);
+        //Ok(())
     }
 }
 
 pub fn main() -> GameResult {
-    let cb = ggez::context::ContextBuilder::new("Chess", "malanak");
+    let cb = ggez::context::ContextBuilder::new("Chess", "malanak")
+        .window_mode(ggez::conf::WindowMode::default().dimensions(SCREEN_WIDTH, SCREEN_HEIGHT));
     let (mut ctx, event_loop) = cb.build()?;
     let app = App::new(&mut ctx)?;
     event::run(ctx, event_loop, app)
