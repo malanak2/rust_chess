@@ -128,7 +128,7 @@ impl event::EventHandler<ggez::GameError> for App {
                         }
                     };
 
-                    canvas.draw(figure.get_texture().set_scale(50.0), Vec2::new((width / 8.0) * x as f32, (height / 8.0) * y as f32));
+                    canvas.draw(figure.get_texture().add(if color == Color::BLACK {"b"} else {"w"}).set_scale(50.0), Vec2::new((width / 8.0) * y as f32, (height / 8.0) * x as f32));
                 }
                 
                 
