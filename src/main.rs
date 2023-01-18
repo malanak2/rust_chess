@@ -196,7 +196,7 @@ impl event::EventHandler<ggez::GameError> for App {
                     }
                 };
                 if self.curr_turn == true && color == Color::WHITE { // and is white figure
-                    if self.sel_piece_data.2.is_none() {println!("NONE DETECTED white init");}
+                    if figure.is_none() {println!("NONE DETECTED white init");}
                     self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
                 } else if self.curr_turn != true && color == Color::BLACK { // and is black figure
                     if figure.is_none() {println!("NONE DETECTED at initial");}
@@ -288,7 +288,7 @@ impl event::EventHandler<ggez::GameError> for App {
 }
 
 pub fn main() -> GameResult {
-    env::set_var("RUST_BACKTRACE", "1");
+    env::set_var("RUST_BACKTRACE", "0");
     let cb = ggez::context::ContextBuilder::new("Chess", "malanak")
         .window_mode(ggez::conf::WindowMode::default().dimensions(SCREEN_WIDTH, SCREEN_HEIGHT));
     let (mut ctx, event_loop) = cb.build()?;
