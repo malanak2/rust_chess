@@ -1,9 +1,11 @@
 #![allow(clippy::unnecessary_wraps)]
 
 use std::time::Instant;
+use std::env;
 
 use ggez::{event, glam::*, graphics::{self, Color, DrawParam, GraphicsContext}, Context, GameResult, graphics::Image, GameError};
 use ggez::event::MouseButton;
+
 
 const SCREEN_WIDTH: f32 = 800.0;
 const SCREEN_HEIGHT: f32 = 600.0;
@@ -74,21 +76,17 @@ impl Board {
 
 struct App {
     board: Board,
-    sel_piece_data: (Option<i32>, Option<i32>, Option<PlayerFigure>)
+    sel_piece_data: (Option<i32>, Option<i32>, Option<PlayerFigure>),
     time_since_start: Instant,
     curr_turn: bool,
-    curr_piece_col: Option<bool>,
 }
 
 impl App {
     fn new(ctx: &mut Context) -> GameResult<App> {
         Ok(App { board: Board::new(),
-            sel_piece_x: None,
-            sel_piece_y: None,
+            sel_piece_data: (None, None, None),
             time_since_start: Instant::now(),
-            picked_up_piece: None,
             curr_turn: true,
-            curr_piece_col: None,
         })
     }
 }
@@ -140,7 +138,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 
             }
         }
-        let figure = &self.picked_up_piece;
+        let figure = &self.sel_piece_data.2;
         if figure.is_none() {
 
         } else {
@@ -182,7 +180,7 @@ impl event::EventHandler<ggez::GameError> for App {
             grid_y = 7;
         }
         let figure = self.board.data[grid_x as usize][grid_y as usize];
-        if self.picked_up_piece.is_none() {
+        if self.sel_piece_data.2.is_none() {
             if figure.is_none() {
                 println!("None at {} {}", grid_x, grid_y)
             } else {
@@ -198,21 +196,17 @@ impl event::EventHandler<ggez::GameError> for App {
                     }
                 };
                 if self.curr_turn == true && color == Color::WHITE { // and is white figure
-                    self.sel_piece_x = Some(grid_x);
-                    self.sel_piece_y = Some(grid_y);
-                    self.picked_up_piece = figure;
+                    if self.sel_piece_data.2.is_none() {println!("NONE DETECTED white init");}
+                    self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
                 } else if self.curr_turn != true && color == Color::BLACK { // and is black figure
-                    self.sel_piece_x = Some(grid_x);
-                    self.sel_piece_y = Some(grid_y);
-                    self.picked_up_piece = figure;
-                } else if self.picked_up_piece.is_none() {
+                    if figure.is_none() {println!("NONE DETECTED at initial");}
+                    self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
+                } else if self.sel_piece_data.2.is_none() {
                 } else {
                     
-                    self.board.data[self.sel_piece_x.unwrap() as usize][self.sel_piece_y.unwrap() as usize] = None;
-                    self.board.data[grid_x as usize][grid_y as usize] = self.picked_up_piece;
-                    self.sel_piece_x = None;
-                    self.sel_piece_y = None;
-                    self.picked_up_piece = None;
+                    self.board.data[self.sel_piece_data.0.unwrap() as usize][self.sel_piece_data.1.unwrap() as usize] = None;
+                    self.board.data[grid_x as usize][grid_y as usize] = self.sel_piece_data.2;
+                    self.sel_piece_data = (None, None, None);
                     self.curr_turn = !self.curr_turn;
                     println!("Shot at {} {}", grid_x, grid_y);
                             
@@ -220,7 +214,7 @@ impl event::EventHandler<ggez::GameError> for App {
             }
         }
         else if figure.is_none() {
-            let piece = self.picked_up_piece;
+            let piece = self.sel_piece_data.2;
             let color;
             let u_figure = match piece {
                 Some(PlayerFigure::Black(piece)) => {
@@ -240,12 +234,13 @@ impl event::EventHandler<ggez::GameError> for App {
             for fig_move in moves.0 {
                 match moves.1 {
                     MovementType::Limited => {
-                        if grid_x - self.sel_piece_x.unwrap() == fig_move[0] && grid_y - self.sel_piece_y.unwrap() == fig_move[1] {
-                            self.board.data[self.sel_piece_x.unwrap() as usize][self.sel_piece_y.unwrap() as usize] = None;
-                            self.board.data[grid_x as usize][grid_y as usize] = self.picked_up_piece;
-                            self.sel_piece_x = None;
-                            self.sel_piece_y = None;
-                            self.picked_up_piece = None;
+                        if self.sel_piece_data.2.is_none() {println!("NONE DETECTED movement");}
+                        if self.sel_piece_data.1.is_none() {println!("NONE DETECTED movement 1");}
+                        if self.sel_piece_data.0.is_none() {println!("NONE DETECTED movement 0");}
+                        if grid_x - &self.sel_piece_data.0.unwrap() == fig_move[0] && grid_y - &self.sel_piece_data.1.unwrap() == fig_move[1] {
+                            self.board.data[self.sel_piece_data.0.unwrap() as usize][self.sel_piece_data.1.unwrap() as usize] = None;
+                            self.board.data[grid_x as usize][grid_y as usize] = self.sel_piece_data.2;
+                            self.sel_piece_data = (None, None, None);
                             self.curr_turn = !self.curr_turn;
                             println!("Shot at {} {}", grid_x, grid_y);
                         }
@@ -272,21 +267,18 @@ impl event::EventHandler<ggez::GameError> for App {
                 }
             };
             if self.curr_turn == true && color == Color::WHITE { // and is white figure
-                self.sel_piece_x = Some(grid_x);
-                self.sel_piece_y = Some(grid_y);
-                self.picked_up_piece = figure;
+                if self.sel_piece_data.2.is_none() {println!("NONE DETECTED white sec");}
+                self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
             } else if self.curr_turn != true && color == Color::BLACK { // and is black figure
-                self.sel_piece_x = Some(grid_x);
-                self.sel_piece_y = Some(grid_y);
-                self.picked_up_piece = figure;
+                if figure.is_none() {println!("NONE DETECTED black sec");}
+                println!("{} {}", grid_x, grid_y);
+                self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
             } else {
-                self.board.data[self.sel_piece_x.unwrap() as usize][self.sel_piece_y.unwrap() as usize] = None;
-            self.board.data[grid_x as usize][grid_y as usize] = self.picked_up_piece;
-            self.sel_piece_x = None;
-            self.sel_piece_y = None;
-            self.picked_up_piece = None;
-            self.curr_turn = !self.curr_turn;
-            println!("Shot at {} {}", grid_x, grid_y);
+                self.board.data[self.sel_piece_data.0.unwrap() as usize][self.sel_piece_data.1.unwrap() as usize] = None;
+                self.board.data[grid_x as usize][grid_y as usize] = self.sel_piece_data.2;
+                self.sel_piece_data = (None, None, None);
+                self.curr_turn = !self.curr_turn;
+                println!("Shot at {} {}", grid_x, grid_y);
             }
         }
         Ok(())
@@ -296,6 +288,7 @@ impl event::EventHandler<ggez::GameError> for App {
 }
 
 pub fn main() -> GameResult {
+    env::set_var("RUST_BACKTRACE", "1");
     let cb = ggez::context::ContextBuilder::new("Chess", "malanak")
         .window_mode(ggez::conf::WindowMode::default().dimensions(SCREEN_WIDTH, SCREEN_HEIGHT));
     let (mut ctx, event_loop) = cb.build()?;
