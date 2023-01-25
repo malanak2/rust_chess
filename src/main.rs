@@ -32,7 +32,7 @@ impl Figure{
             Figure::King => (vec![vec![1, 1], vec![0, 1], vec![1, 0], vec![-1, 0], vec![-1, 1], vec![-1, -1], vec![1, -1], vec![0, -1]], MovementType::Limited),
             Figure::Queen => (vec![vec![1, 1], vec![0, 1], vec![1, 0], vec![-1, 0], vec![-1, 1], vec![-1, -1], vec![1, -1], vec![0, -1]], MovementType::Unlimited),
             Figure::Bishop => (vec![vec![1, 1], vec![-1, 1], vec![-1, -1], vec![1, -1]], MovementType::Unlimited),
-            Figure::Knight => (vec![vec![2, 1], vec![-2, 1], vec![2, -1], vec![-2, -1]], MovementType::Limited),
+            Figure::Knight => (vec![vec![2, 1], vec![-2, 1], vec![2, -1], vec![-2, -1], vec![1, 2], vec![-1, 2], vec![1, -2], vec![-1, -2]], MovementType::Limited),
             Figure::Rook => (vec![vec![0, 1], vec![1, 0], vec![-1, 0], vec![0, -1]], MovementType::Unlimited),
             Figure::Pawn => (vec![vec![1, 0], vec![1, 1], vec![1, -1]], MovementType::Pawn),
         }
@@ -66,7 +66,7 @@ impl Board {
                 vec![None; 8], 
                 vec![None; 8], 
                 vec![None; 8], 
-                vec![None; 8], 
+                vec![None, None, None, None, None, None, None, Some(PlayerFigure::Black(Figure::Pawn))], 
                 vec![Some(PlayerFigure::White(Figure::Pawn)); 8], 
                 vec![Some(PlayerFigure::White(Figure::Rook)), Some(PlayerFigure::White(Figure::Knight)), Some(PlayerFigure::White(Figure::Bishop)), Some(PlayerFigure::White(Figure::Queen)), Some(PlayerFigure::White(Figure::King)), Some(PlayerFigure::White(Figure::Bishop)), Some(PlayerFigure::White(Figure::Knight)), Some(PlayerFigure::White(Figure::Rook))]],
             is_whites_turn: true,
@@ -204,19 +204,18 @@ impl event::EventHandler<ggez::GameError> for App {
                 } else if self.sel_piece_data.2.is_none() {
                 } else {
                     
-                    self.board.data[self.sel_piece_data.0.unwrap() as usize][self.sel_piece_data.1.unwrap() as usize] = None;
-                    self.board.data[grid_x as usize][grid_y as usize] = self.sel_piece_data.2;
-                    self.sel_piece_data = (None, None, None);
-                    self.curr_turn = !self.curr_turn;
-                    println!("Shot at {} {}", grid_x, grid_y);
-                            
-                        }
+                    println!("How did we get here?");
+                }
             }
         }
         else if figure.is_none() {
-            let piece = self.sel_piece_data.2;
+            if self.sel_piece_data.2.is_none() {println!("NONE DETECTED movement check");}
+            if self.sel_piece_data.1.is_none() {println!("NONE DETECTED movement 1");}
+            if self.sel_piece_data.0.is_none() {println!("NONE DETECTED movement 0");}
+            // Chechks above do not detect a null
+            let piece = self.sel_piece_data;
             let color;
-            let u_figure = match piece {
+            let u_figure = match piece.2 {
                 Some(PlayerFigure::Black(piece)) => {
                     color = Color::BLACK;
                     piece
@@ -234,12 +233,13 @@ impl event::EventHandler<ggez::GameError> for App {
             for fig_move in moves.0 {
                 match moves.1 {
                     MovementType::Limited => {
-                        if self.sel_piece_data.2.is_none() {println!("NONE DETECTED movement");}
-                        if self.sel_piece_data.1.is_none() {println!("NONE DETECTED movement 1");}
-                        if self.sel_piece_data.0.is_none() {println!("NONE DETECTED movement 0");}
-                        if grid_x - &self.sel_piece_data.0.unwrap() == fig_move[0] && grid_y - &self.sel_piece_data.1.unwrap() == fig_move[1] {
-                            self.board.data[self.sel_piece_data.0.unwrap() as usize][self.sel_piece_data.1.unwrap() as usize] = None;
-                            self.board.data[grid_x as usize][grid_y as usize] = self.sel_piece_data.2;
+                        // Checks below do detect a null if the piece is black
+                        if piece.2.is_none() {println!("NONE DETECTED movement");}
+                        if piece.1.is_none() {println!("NONE DETECTED movement 1");}
+                        if piece.0.is_none() {println!("NONE DETECTED movement 0");}
+                        if grid_x - &piece.0.unwrap() == fig_move[0] && grid_y - &piece.1.unwrap() == fig_move[1] {
+                            self.board.data[piece.0.unwrap() as usize][piece.1.unwrap() as usize] = None;
+                            self.board.data[grid_x as usize][grid_y as usize] = piece.2;
                             self.sel_piece_data = (None, None, None);
                             self.curr_turn = !self.curr_turn;
                             println!("Shot at {} {}", grid_x, grid_y);
@@ -254,6 +254,7 @@ impl event::EventHandler<ggez::GameError> for App {
                 }
                 
             }
+            
         } else {
             let color = match figure {
                 Some(PlayerFigure::Black(figure)) => {
@@ -274,11 +275,51 @@ impl event::EventHandler<ggez::GameError> for App {
                 println!("{} {}", grid_x, grid_y);
                 self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
             } else {
-                self.board.data[self.sel_piece_data.0.unwrap() as usize][self.sel_piece_data.1.unwrap() as usize] = None;
-                self.board.data[grid_x as usize][grid_y as usize] = self.sel_piece_data.2;
-                self.sel_piece_data = (None, None, None);
-                self.curr_turn = !self.curr_turn;
-                println!("Shot at {} {}", grid_x, grid_y);
+                if self.sel_piece_data.2.is_none() {println!("NONE DETECTED movement check");}
+                if self.sel_piece_data.1.is_none() {println!("NONE DETECTED movement 1");}
+                if self.sel_piece_data.0.is_none() {println!("NONE DETECTED movement 0");}
+                // Chechks above do not detect a null
+                let piece = self.sel_piece_data;
+                let color;
+                let u_figure = match piece.2 {
+                    Some(PlayerFigure::Black(piece)) => {
+                        color = Color::BLACK;
+                        piece
+                    }
+                    Some(PlayerFigure::White(piece)) => {
+                        color = Color::WHITE;
+                        piece
+                    }
+                    None => {
+                        color = Color::WHITE;
+                        Figure::Bishop
+                    }
+                };
+                let moves = u_figure.get_moves();
+                for fig_move in moves.0 {
+                    match moves.1 {
+                        MovementType::Limited => {
+                            // Checks below do detect a null if the piece is black
+                            if piece.2.is_none() {println!("NONE DETECTED movement");}
+                            if piece.1.is_none() {println!("NONE DETECTED movement 1");}
+                            if piece.0.is_none() {println!("NONE DETECTED movement 0");}
+                            if grid_x - &piece.0.unwrap() == fig_move[0] && grid_y - &piece.1.unwrap() == fig_move[1] {
+                                self.board.data[piece.0.unwrap() as usize][piece.1.unwrap() as usize] = None;
+                                self.board.data[grid_x as usize][grid_y as usize] = piece.2;
+                                self.sel_piece_data = (None, None, None);
+                                self.curr_turn = !self.curr_turn;
+                                println!("Shot at {} {}", grid_x, grid_y);
+                            }
+                        }
+                        MovementType::Unlimited => {
+
+                        }
+                        MovementType::Pawn => {
+
+                        }
+                    }
+                    
+                }
             }
         }
         Ok(())
