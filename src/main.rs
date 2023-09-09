@@ -108,7 +108,7 @@ impl event::EventHandler<ggez::GameError> for App {
                         ctx,
                         graphics::DrawMode::fill(),
                         graphics::Rect::new((width / 8.0) * x as f32, (height / 8.0) * y as f32, width / 8.0, height / 8.0),
-                        if (x + y) % 2 == 0 {Color::RED} else {Color::BLACK},
+                        if (x + y) % 2 == 0 {Color {r: 0.502, g: 0.502, b: 0.502, a: 1.0} } else {Color::BLACK},
                     )?, Vec2::new(0.0, 0.0));
                     //println!("{} {} WHITE", (width / 8.0) * x as f32, (height / 8.0) * i as f32);
             }
@@ -116,7 +116,7 @@ impl event::EventHandler<ggez::GameError> for App {
         for y in 0..8 {
             for x in 0..8 {
                 let figure = &self.board.data[x as usize][y as usize];
-                if let Some(Figure) = figure {
+                if let Some(_Figure) = figure {
                     let Some(player_figure) = &self.board.data[x as usize][y as usize] else {
                         continue;
                     };
@@ -185,10 +185,10 @@ impl event::EventHandler<ggez::GameError> for App {
                 println!("None at {} {}", grid_x, grid_y)
             } else {
                 let color = match figure {
-                    Some(PlayerFigure::Black(figure)) => {
+                    Some(PlayerFigure::Black(_figure)) => {
                         Color::BLACK
                     }
-                    Some(PlayerFigure::White(figure)) => {
+                    Some(PlayerFigure::White(_figure)) => {
                         Color::WHITE
                     }
                     None => {
@@ -201,8 +201,40 @@ impl event::EventHandler<ggez::GameError> for App {
                 } else if self.curr_turn != true && color == Color::BLACK { // and is black figure
                     if figure.is_none() {println!("NONE DETECTED at initial");}
                     self.sel_piece_data = (Some(grid_x), Some(grid_y), figure);
-                } else if self.sel_piece_data.2.is_none() {
-                } else {
+                } else if !self.sel_piece_data.0.is_none()
+                {
+                    let fig = self.sel_piece_data.2.unwrap();
+                    let moves;
+                        match fig {
+                            PlayerFigure::Black(figure) => {
+                                moves = figure.get_moves();
+                            },
+                            PlayerFigure::White(figure) => {
+                                moves = figure.get_moves();
+                            }
+                        }
+                    if self.curr_turn != true && color == Color::WHITE
+                    {
+                        match moves.1 {
+                            MovementType::Limited => {
+                                
+                            }
+                            MovementType::Unlimited => {
+                                
+                            }
+                            MovementType::Pawn => {
+                                
+                            }
+                        }
+
+                    } else if self.curr_turn == true && color == Color::BLACK {
+
+                    }
+                }
+                
+                
+                 else if self.sel_piece_data.2.is_none() 
+                {} else {
                     
                     println!("How did we get here?");
                 }
